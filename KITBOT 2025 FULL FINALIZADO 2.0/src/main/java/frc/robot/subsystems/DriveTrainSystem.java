@@ -5,118 +5,117 @@
 package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.ctre.phoenix6.hardware.Pigeon2;
-import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkClosedLoopController;
+import com.revrobotics.spark.SparkBase.PersistMode;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.Constants.CoralState;
 import frc.robot.Constants.DriveTrainState;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.wpilibj.DriverStation;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.controllers.PPLTVController;
+import com.pathplanner.lib.config.RobotConfig;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
 
 public class DriveTrainSystem extends SubsystemBase {
   public DriveTrainState currentState = DriveTrainState.STOPPED;
-  private Pose2d currentPose; // Pose atual do robô
-    private ChassisSpeeds currentSpeeds; // Velocidades atuais do robô
+  private Pose2d currentPose = new Pose2d(); // Armazena a pose do robô
+  private ChassisSpeeds currentSpeeds = new ChassisSpeeds();
 
-  SparkMax rightMotorFront = new SparkMax(Constants.DriveTrainConstants.rightFrontMotorID, MotorType.kBrushless);
-  SparkMax rightMotorBack = new SparkMax(Constants.DriveTrainConstants.rightBackMotorID, MotorType.kBrushless);
-  SparkMax leftMotorBack = new SparkMax(Constants.DriveTrainConstants.leftBackMotorID, MotorType.kBrushless);
-  SparkMax leftMotorFront = new SparkMax(Constants.DriveTrainConstants.leftFrontMotorID, MotorType.kBrushless);
+  // Motores
+  private SparkMax rightMotorFront = new SparkMax(Constants.DriveTrainConstants.rightFrontMotorID, MotorType.kBrushless);
+  private SparkMax rightMotorBack = new SparkMax(Constants.DriveTrainConstants.rightBackMotorID, MotorType.kBrushless);
+  private SparkMax leftMotorBack = new SparkMax(Constants.DriveTrainConstants.leftBackMotorID, MotorType.kBrushless);
+  private SparkMax leftMotorFront = new SparkMax(Constants.DriveTrainConstants.leftFrontMotorID, MotorType.kBrushless);
 
-  Pigeon2 pigeon2 = new Pigeon2(17);
+  // Giroscópio
+  private Pigeon2 pigeon2 = new Pigeon2(17);
   private final PIDController rotationPID = new PIDController(0.0733, 2, 0.0042);
 
-  SparkMaxConfig configSparkRight = new SparkMaxConfig();
-  SparkMaxConfig configSparkLeft = new SparkMaxConfig();
+  // Configuração dos motores
+  private SparkMaxConfig configSparkRight = new SparkMaxConfig();
+  private SparkMaxConfig configSparkLeft = new SparkMaxConfig();
 
-  MotorControllerGroup leftMotorControllerGroup = new MotorControllerGroup(leftMotorFront, leftMotorBack);
-  MotorControllerGroup rightMotorControllerGroup = new MotorControllerGroup(rightMotorFront, rightMotorBack);
+  // Drive diferencial
+  private DifferentialDrive differentialDrive;
 
-  DifferentialDrive differentialDrive = new DifferentialDrive(leftMotorControllerGroup, rightMotorControllerGroup);
-
-  SlewRateLimiter filter = new SlewRateLimiter(10);
+  // Limitador de aceleração
+  private SlewRateLimiter filter = new SlewRateLimiter(10);
 
   public DriveTrainSystem() {
-
     rotationPID.setIntegratorRange(-1.0, 1.0);
     rotationPID.setTolerance(0.1);
 
+    // Configuração dos motores
     configSparkRight
       .inverted(true)
-      .idleMode(IdleMode.kBrake);
+      .idleMode(IdleMode.kBrake)
+      .smartCurrentLimit(30);
 
     configSparkLeft
       .inverted(false)
-      .idleMode(IdleMode.kBrake);
+      .idleMode(IdleMode.kBrake)
+      .smartCurrentLimit(30);
 
-    configSparkRight.smartCurrentLimit(30);
-    configSparkLeft.smartCurrentLimit(30);
-  
-    rightMotorFront.configure(configSparkRight, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    rightMotorBack.configure(configSparkRight, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    leftMotorFront.configure(configSparkLeft, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    leftMotorBack.configure(configSparkLeft, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    this.currentPose = new Pose2d(); // Pose inicial em (0, 0) com rotação 0
-    this.currentSpeeds = new ChassisSpeeds(); 
-    //setupPathplanner();
+     rightMotorFront.configure(configSparkRight, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+      rightMotorBack.configure(configSparkRight, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+      leftMotorFront.configure(configSparkLeft, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+      leftMotorBack.configure(configSparkLeft, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+    // Define a inversão dos motores manualmente para evitar conflitos com DifferentialDrive
+    leftMotorFront.setInverted(false);
+    leftMotorBack.setInverted(false);
+    rightMotorFront.setInverted(true);
+    rightMotorBack.setInverted(true);
+
+    // Inicializa o DifferentialDrive sem usar MotorControllerGroup
+    differentialDrive = new DifferentialDrive(leftMotorFront, rightMotorFront);
+
+    setupPathplanner();
   }
-  /*public void setupPathplanner(){
+
+  public void setupPathplanner(){
     RobotConfig config;
-    try{
+    try {
       config = RobotConfig.fromGUISettings();
     } catch (Exception e) {
-      // Handle exception as needed
       e.printStackTrace();
+      return;
     }
-  
-    // Configure AutoBuilder last
+
     AutoBuilder.configure(
-            this::getPose, // Robot pose supplier
-            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
-            this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
-            new PPLTVController(0.02), // PPLTVController is the built in path following controller for differential drive trains
-            config, // The robot configuration
+            this::getPose, // Método que retorna a pose atual do robô
+            this::resetPose, // Método para resetar a odometria
+            this::getRobotRelativeSpeeds, // Retorna a velocidade do robô em ChassisSpeeds
+            (speeds, feedforwards) -> driveRobotRelative(speeds), // Define a movimentação do robô
+            new PPLTVController(0.02), // Controlador de trajetória para Tank Drive
+            config, // Configuração do robô
             () -> {
-              // Boolean supplier that controls when the path will be mirrored for the red alliance
-              // This will flip the path being followed to the red side of the field.
-              // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-  
               var alliance = DriverStation.getAlliance();
-              if (alliance.isPresent()) {
-                return alliance.get() == DriverStation.Alliance.Red;
-              }
-              return false;
+              return alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
             },
-            this // Reference to this subsystem to set requirements
-    );*/
-
-  
-
+            this // Adiciona dependência ao subsistema
+    );
+  }
 
   @Override
   public void periodic() {
-    // System.out.println(AnglePideon());
+    if (currentState == DriveTrainState.STOPPED) {
+        differentialDrive.stopMotor();
+    }
+    differentialDrive.feed(); // Mantém o DifferentialDrive atualizado
   }
 
   public void arcadeMode(double drive, double turn){
@@ -126,6 +125,7 @@ public class DriveTrainSystem extends SubsystemBase {
   public void tankmode(double left, double right){
     differentialDrive.tankDrive(left, right);
   }
+
   public void stop(){
     differentialDrive.stopMotor(); 
   }
@@ -141,20 +141,27 @@ public class DriveTrainSystem extends SubsystemBase {
   public void resetPideon(){
     pigeon2.reset();
   }
-   public Pose2d getPose() {
-        return currentPose;
-    }
-    public void resetPose(Pose2d pose) {
-      this.currentPose = pose;
+
+  public Pose2d getPose() {
+    return currentPose; // Substituir pelo método real de odometria
   }
+
+  public void resetPose(Pose2d newPose) {
+    this.currentPose = newPose;
+    // Adicione aqui o reset real da odometria se necessário
+  }
+
   public ChassisSpeeds getRobotRelativeSpeeds() {
-        return currentSpeeds;
-    }
-    public void driveRobotRelative(ChassisSpeeds speeds) {
-      // Atualiza as velocidades atuais
-      this.currentSpeeds = speeds;
-    }
-     
+    return currentSpeeds; // Substituir pela leitura real da cinemática do robô
+  }
+
+  public void driveRobotRelative(ChassisSpeeds speeds) {
+    double leftSpeed = speeds.vxMetersPerSecond - speeds.omegaRadiansPerSecond;
+    double rightSpeed = speeds.vxMetersPerSecond + speeds.omegaRadiansPerSecond;
+
+    tankmode(leftSpeed, rightSpeed);
+  }
+
   public void rotate(double targetAngle){
     rotationPID.setSetpoint(targetAngle);
     double output = rotationPID.calculate(AnglePideon());
@@ -162,5 +169,8 @@ public class DriveTrainSystem extends SubsystemBase {
 
     tankmode(scaledOutput, -scaledOutput);
   }
-}
 
+  public Command getAutonomousCommand(String pathName, boolean setOdomToStart) {
+    return new PathPlannerAuto(pathName);
+  }
+}

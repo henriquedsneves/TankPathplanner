@@ -13,8 +13,13 @@ import frc.robot.commands.Manipulator.SetMechanismState;
 import frc.robot.subsystems.DriveTrainSystem;
 import frc.robot.commands.DriveWithJoystick;
 import frc.robot.subsystems.CoralScoreSystem;
+
+import com.pathplanner.lib.auto.NamedCommands;
+
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -40,6 +45,10 @@ public class RobotContainer {
   public RobotContainer() {
     configureBindings();
     defaultcommands();
+    
+        NamedCommands.registerCommand("Stop", 
+            new InstantCommand(() -> driveTrainSystem.stop(), driveTrainSystem)
+        );
   }
 
   private void configureBindings() {
@@ -53,5 +62,11 @@ public class RobotContainer {
 
   private void defaultcommands(){
     driveTrainSystem.setDefaultCommand(new DriveWithJoystick(driveTrainSystem, joystick1));
+  }
+
+   // Função que retorna o autônomo
+  public Command AutonomousPrecisao() {
+    // Aqui retornamos o comando que está no selecionador
+    return driveTrainSystem.getAutonomousCommand("Auto1", true);
   }
 }
