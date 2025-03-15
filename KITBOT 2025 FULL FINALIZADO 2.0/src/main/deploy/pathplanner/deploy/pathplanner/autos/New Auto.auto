@@ -7,38 +7,31 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Test1"
+            "pathName": "Example Path"
           }
         },
         {
-          "type": "path",
+          "type": "named",
           "data": {
-            "pathName": "Test2"
-          }
-        },
-        {
-          "type": "sequential",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "L4"
-                }
-              }
-            ]
+            "name": "Stop"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 2.0
+            "waitTime": 12.0
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Test3"
+            "pathName": "Copy of Example Path"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "pontuarL1"
           }
         }
       ]

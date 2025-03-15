@@ -15,7 +15,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 public class DriveWithJoystick extends Command {
   @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 
-  private final DriveTrainSystem driveTrainSystem;
+  public final DriveTrainSystem driveTrainSystem;
   double drive;
   double turn;
 

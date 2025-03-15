@@ -14,9 +14,12 @@ import frc.robot.subsystems.DriveTrainSystem;
 import frc.robot.commands.DriveWithJoystick;
 import frc.robot.subsystems.CoralScoreSystem;
 
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -33,7 +36,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   public static final DriveTrainSystem driveTrainSystem = new DriveTrainSystem();
   public static final CoralScoreSystem coralScoreSystem = new CoralScoreSystem();
-
+   private final SendableChooser<Command> autoChooser;
   CommandXboxController joystick1 = new CommandXboxController(0);
   CommandXboxController joystick2 = new CommandXboxController(1);
   
@@ -47,8 +50,10 @@ public class RobotContainer {
     defaultcommands();
     
         NamedCommands.registerCommand("Stop", 
-            new InstantCommand(() -> driveTrainSystem.stop(), driveTrainSystem)
+            new InstantCommand(() -> driveTrainSystem.stop(),coralScoreSystem)
         );
+         autoChooser = AutoBuilder.buildAutoChooser();
+      SmartDashboard.putData("Autonomo", autoChooser);
   }
 
   private void configureBindings() {
@@ -67,6 +72,6 @@ public class RobotContainer {
    // Função que retorna o autônomo
   public Command AutonomousPrecisao() {
     // Aqui retornamos o comando que está no selecionador
-    return driveTrainSystem.getAutonomousCommand("Auto1", true);
+    return autoChooser.getSelected();
   }
 }

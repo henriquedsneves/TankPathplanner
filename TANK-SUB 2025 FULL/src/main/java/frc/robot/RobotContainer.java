@@ -14,6 +14,7 @@ import frc.robot.Constants.IntakeState;
 import frc.robot.Constants.ModeElevator;
 import frc.robot.Constants.PivoState;
 import frc.robot.Constants.Trajetoria;
+import frc.robot.commands.Autos;
 import frc.robot.commands.DriveWithJoystick;
 import frc.robot.commands.moveElevatorCommand;
 import frc.robot.commands.Manipulator.SetActions;
@@ -26,11 +27,14 @@ import frc.robot.subsystems.DriveTrainSystem;
 import frc.robot.subsystems.ElevatorSystem;
 import frc.robot.subsystems.PivoSystem;
 
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -55,7 +59,8 @@ public class RobotContainer {
   public static final ClimberSystem climberSystem = new ClimberSystem();
   public static final AlgaeSystem algaeSystem = new AlgaeSystem();
   public static final ArmSystem armSystem = new ArmSystem();
-
+    
+  private final SendableChooser<Command> autoChooser;
   CommandXboxController joystick1 = new CommandXboxController(1);
   CommandXboxController joystick2 = new CommandXboxController(0);
   
@@ -158,7 +163,10 @@ public class RobotContainer {
         new InstantCommand(() -> moveElevator.repouso(), driveTrainSystem)
 
     )
-);
+
+    );
+    autoChooser = AutoBuilder.buildAutoChooser();
+        SmartDashboard.putData("Autonomo", autoChooser);
     
       
     configureBindings();
@@ -191,6 +199,9 @@ public class RobotContainer {
 
     // joystick2.button(8).onTrue(new SetMechanismState(ArmState.OPERATION));
   }
+  public Command Gofront(){
+    return new Autos(driveTrainSystem, 0.5);
+  }
 
   private void defaultcommands(){
     driveTrainSystem.setDefaultCommand(new DriveWithJoystick(driveTrainSystem, joystick1));
@@ -199,10 +210,12 @@ public class RobotContainer {
 
    public Command Auto() {
     // Aqui retornamos o comando que está no selecionador
-    return driveTrainSystem.getAutonomousCommand(Trajetoria.nome_Trajetoria1, true);
+    return autoChooser.getSelected();
   }
    public Command AutoTest() {
     // Aqui retornamos o comando que está no selecionador
     return driveTrainSystem.getAutonomousCommand(Trajetoria.nome_Trajetoria2, true);
   }
+   // Define os motores como coast ou brake
+   
 }
